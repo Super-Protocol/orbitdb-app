@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  orbitdb-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orbitdb-app
+    ports:
+      - "3200:3000"
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - orbitdb-data:/app/data
+
+volumes:
+  orbitdb-data: 
