@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   BaseDatabase,
   DocumentsDatabase,
@@ -7,7 +8,7 @@ import { OrbitDBService } from './orbitdb.service.js';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
 @Injectable()
-export class Database implements OnModuleInit {
+export class Database<T extends { id: string }> implements OnModuleInit {
   private database: DocumentsDatabase;
   private initPromise: Promise<void>;
 
@@ -24,6 +25,22 @@ export class Database implements OnModuleInit {
       this.name,
       this.options,
     )) as DocumentsDatabase;
+
+    // this.database.events.on('close', () => {
+    //   console.log('close');
+    // });
+
+    // this.database.events.on('drop', () => {
+    //   console.log('drop');
+    // });
+
+    // this.database.events.on('join', (peerId, heads) => {
+    //   console.log('join', peerId, heads);
+    // });
+
+    // this.database.events.on('update', (entry) => {
+    //   console.log('update', entry);
+    // });
   }
 
   async onModuleInit() {
@@ -35,19 +52,33 @@ export class Database implements OnModuleInit {
     return this.database;
   }
 
-  async put(value: any) {
+  async put(value: T): Promise<T> {
     await this.initPromise;
-    return this.database.put(value);
+    await this.database.put({
+      ...value,
+      _id: value.id || crypto.randomUUID(),
+    });
+    return value;
   }
 
-  async get(key: string) {
+  async get(key: string): Promise<T | null> {
     await this.initPromise;
     const result = await this.database.get(key);
 
     if (result) {
-      return result.value as unknown as Record<string, unknown>;
+      return result.value as unknown as T;
     }
 
     return null;
+  }
+
+  async all(): Promise<T[]> {
+    await this.initPromise;
+
+    const result = await (this.database as any).all();
+    return result.map(({ value: { _id, ...offer } }) => ({
+      id: _id,
+      ...offer,
+    }));
   }
 }

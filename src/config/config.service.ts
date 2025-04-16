@@ -34,4 +34,11 @@ export class ConfigService {
       './orbitdb'
     );
   }
+
+  get swarmKey(): Uint8Array<ArrayBuffer> {
+    return Buffer.from(
+      this.configService.get<Config['swarmKey']>('swarmKey')!,
+      'base64',
+    );
+  }
 }

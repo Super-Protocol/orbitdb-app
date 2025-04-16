@@ -5,11 +5,11 @@ import { Database } from '../orbitdb/database.js';
 
 @Injectable()
 export class OfferService {
-  constructor(@InjectDatabase('offer') private database: Database) {}
+  constructor(@InjectDatabase('offer') private database: Database<Offer>) {}
 
   async createOffer(offer: Omit<Offer, 'id'>) {
     const id = crypto.randomUUID();
-    await this.database.put({ ...offer, _id: id });
+    await this.database.put({ ...offer, id });
     return { id, ...offer };
   }
 
@@ -19,7 +19,10 @@ export class OfferService {
       throw new NotFoundException('Offer not found');
     }
 
-    const { _id, ...data } = offer;
-    return { id: _id, ...data } as Offer;
+    return offer;
+  }
+
+  async getOffers(): Promise<Offer[]> {
+    return this.database.all();
   }
 }

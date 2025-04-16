@@ -25,6 +25,9 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   ORBITDB_DIRECTORY: string;
+
+  @IsString()
+  SWARM_KEY: string;
 }
 
 export function validate(config: Record<string, unknown>) {

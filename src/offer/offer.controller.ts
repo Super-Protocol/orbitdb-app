@@ -15,4 +15,9 @@ export class OfferController {
   async getOffer(@Param('id') id: string) {
     return this.offerService.getOffer(id);
   }
+
+  @Get()
+  async getOffers() {
+    return this.offerService.getOffers();
+  }
 }
