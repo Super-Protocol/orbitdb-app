@@ -9,6 +9,15 @@ import { createHelia, HeliaLibp2p } from 'helia';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { tcp } from '@libp2p/tcp';
 import { mdns } from '@libp2p/mdns';
+import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client';
+import { delegatedHTTPRoutingDefaults } from '@helia/routers';
+import { yamux } from '@chainsafe/libp2p-yamux';
+import { kadDHT, removePublicAddressesMapper } from '@libp2p/kad-dht';
+import { ipnsSelector } from 'ipns/selector';
+import { ipnsValidator } from 'ipns/validator';
+
+import { httpGatewayRouting, libp2pRouting } from '@helia/routers';
+import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import {
   BaseDatabase,
   createOrbitDB,
@@ -123,6 +132,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
       this.helia = await createHelia({
         // datastore,
         blockstore,
+        routers: [httpGatewayRouting()],
         libp2p: {
           addresses: {
             listen: [
@@ -140,45 +150,75 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
               // // '/ip6/::/tcp/0',
               // // '/ip6/::/tcp/0/ws',
               // // '/ip6/::/udp/0/webrtc-direct',
-              // '/p2p-circuit',
+              '/p2p-circuit',
+            ],
+            announce: [
+              `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsPort}`,
             ],
           },
           transports: [circuitRelayTransport(), tcp()],
+          streamMuxers: [yamux()],
           peerDiscovery: [
-            mdns({ interval: 1000 }),
+            pubsubPeerDiscovery({
+              interval: 1000,
+            }),
+            // mdns(),
             bootstrap({
               list: [
-                `ip4/127.0.0.1/tcp/5001/p2p/12D3KooWBaPxRBidSe3KXQDePvRRRNJtP7GbCdtmsdWdULERKRa6`,
+                `/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWJCXMtWatBTmhhRP58NDHoQD38kqhgUV6HxMrQTRys9kG`,
               ],
+              // list: [
+              //   // '/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ',
+              //   // '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
+              //   // '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
+              //   // '/dnsaddr/bootstrap.libp2p.io/p2p/QmZa1sAxajnQjVM8WjWXoMbmPd7NsWhfKsPkErzpm9wGkp',
+              //   // '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
+              //   // '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt',
+              // ],
             }),
           ],
           connectionProtector: preSharedKey({
             psk: this.configService.swarmKey,
           }),
-          connectionManager: {
-            // autoDial: true,
-            // allow: [],
-          },
+          connectionManager: {},
+          // connectionManager: {
+          //   // autoDial: true,
+          //   // allow: [],
+          // },
           services: {
-            autoNAT: autoNAT(),
-            autoTLS: autoTLS(),
-            dcutr: dcutr(),
+            // autoNAT: autoNAT(),
+            // autoTLS: autoTLS(),
+            // dcutr: dcutr(),
             relay: circuitRelayServer(),
             pubsub: gossipsub({
-              allowPublishToZeroTopicPeers: true,
+              // allowPublishToZeroTopicPeers: true,
               // D: 5,
               // Dhi: 12,
               // Dlo: 1,
             }),
+            // delegatedRouting: () =>
+            //   createDelegatedRoutingV1HttpApiClient('http://127.0.0.1:8080'),
+            // dht: kadDHT({
+            //   clientMode: false,
+            //   protocol: '/ipfs/lan/kad/1.0.0',
+            //   peerInfoMapper: removePublicAddressesMapper,
+            //   // querySelfInterval: 1000,
+            //   // selectors: {
+            //   //   ipns: ipnsSelector,
+            //   // },
+            //   // validators: {
+            //   //   ipns: ipnsValidator,
+            //   // },
+            // }),
             identify: identify(),
             identifyPush: identifyPush(),
             ping: ping(),
-            keychain: keychain({
-              pass: '12345678901234567890',
-            }),
-            upnp: uPnPNAT({
-              externalAddress: '127.0.0.1',
-            }),
+            // keychain: keychain({
+            //   pass: '12345678901234567890',
+            // }),
+            // upnp: uPnPNAT({
+            //   externalAddress: '127.0.0.1',
+            // }),
           },
           // privateKey: await keystore.getKey(id),
         },
@@ -201,8 +241,8 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
       }
 
       this.helia.libp2p.addEventListener('peer:discovery', (evt) => {
-        console.log('found peer: ', evt);
-        this.helia.libp2p.dial(evt.detail.multiaddrs);
+        console.log('found peer: ', evt.detail.id.toString());
+        this.helia.libp2p.dial(evt.detail.id);
         // this.helia.libp2p.dial(evt.detail.multiaddrs).then((peer) => {
         //   console.log('peer', peer);
         // });
@@ -247,7 +287,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
         console.log(
           `PeerID: ${this.orbitdb.ipfs.libp2p.peerId.toString()}, peers: ${JSON.stringify(peers)}`,
         );
-      }, 1000);
+      }, 2000);
     } catch (err) {
       const error = err as Error;
       this.logger.error(
