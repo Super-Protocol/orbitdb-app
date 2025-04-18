@@ -37,8 +37,12 @@ export class ConfigService {
 
   get swarmKey(): Uint8Array<ArrayBuffer> {
     return Buffer.from(
-      this.configService.get<Config['swarmKey']>('swarmKey')!,
+      this.configService.get<Config['orbitdb']>('orbitdb')!.swarmKey,
       'base64',
     );
+  }
+
+  get bootstrapNode(): string | undefined {
+    return this.configService.get<Config['orbitdb']>('orbitdb')?.bootstrapNode;
   }
 }

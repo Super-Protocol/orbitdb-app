@@ -7,9 +7,10 @@ export interface Config {
     protocol: string;
   };
   orbitdb: {
+    bootstrapNode?: string;
     directory: string;
+    swarmKey: string;
   };
-  swarmKey: string;
 }
 
 export default (): Config => ({
@@ -21,8 +22,8 @@ export default (): Config => ({
     protocol: process.env.IPFS_PROTOCOL || 'http',
   },
   orbitdb: {
+    bootstrapNode: process.env.BOOTSTRAP_NODE,
     directory: process.env.ORBITDB_DIRECTORY || './data/provider',
+    swarmKey: process.env.SWARM_KEY!,
   },
-  swarmKey: process.env.SWARM_KEY || '',
-  // Здесь можно добавить другие параметры конфигурации
 });
