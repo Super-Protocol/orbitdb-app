@@ -76,7 +76,19 @@ const libp2p = await createLibp2p({
       '/webrtc',
     ],
   },
-  transports: [tcp(), webSockets(), circuitRelayTransport(), webRTC()],
+  transports: [
+    tcp(),
+    webSockets(),
+    circuitRelayTransport(),
+    webRTC({
+      rtcConfiguration: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:global.stun.twilio.com:3478?transport=udp' },
+        ],
+      },
+    }),
+  ],
   connectionEncrypters: [noise(), tls()],
   streamMuxers: [yamux(), mplex()],
   peerDiscovery: [
