@@ -87,7 +87,14 @@ const libp2p = await createLibp2p({
   connectionManager: {},
   services: {
     autoNAT: autoNAT(),
-    relay: circuitRelayServer({}),
+    relay: circuitRelayServer({
+      maxInboundHopStreams: 1000,
+      maxOutboundHopStreams: 1000,
+      reservations: {
+        maxReservations: 100,
+        reservationClearInterval: 1000 * 60,
+      },
+    }),
     ping: ping(),
     identify: identify(),
     pubsub: gossipsub({

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { identify, identifyPush } from '@libp2p/identify';
 import { createHelia, HeliaLibp2p } from 'helia';
-import { gossipsub } from '@chainsafe/libp2p-gossipsub';
+import { GossipSub, gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { tcp } from '@libp2p/tcp';
 import { yamux } from '@chainsafe/libp2p-yamux';
 import { mplex } from '@libp2p/mplex';
@@ -27,7 +27,7 @@ import {
 } from '@libp2p/circuit-relay-v2';
 import { dcutr } from '@libp2p/dcutr';
 import { autoNAT } from '@libp2p/autonat';
-import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
+import { Multiaddr } from '@multiformats/multiaddr';
 import { ping } from '@libp2p/ping';
 import { bootstrap } from '@libp2p/bootstrap';
 import { uPnPNAT } from '@libp2p/upnp-nat';
@@ -45,6 +45,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
   private orbitdb: OrbitDB;
   private helia: HeliaLibp2p<Libp2p<Record<string, unknown>>>;
   private database: BaseDatabase;
+  private pubsub: GossipSub;
   private isReady = false;
 
   constructor(private configService: ConfigService) {}
@@ -125,11 +126,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      if (process.env.CONNECT_TO) {
-        const connectTo = process.env.CONNECT_TO;
-        console.log('connectTo', connectTo);
-        await this.helia.libp2p.dial(multiaddr(connectTo));
-      }
+      this.pubsub = this.helia.libp2p.services.pubsub as GossipSub;
 
       this.helia.libp2p.addEventListener('peer:discovery', (evt) => {
         this.logger.log('Found peer: ', evt.detail.id.toString());
