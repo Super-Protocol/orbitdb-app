@@ -3,7 +3,8 @@ export interface Config {
   port: number;
   ipfs: {
     host: string;
-    port: number;
+    tcpPort: number;
+    wsPort: number;
     protocol: string;
   };
   orbitdb: {
@@ -18,7 +19,8 @@ export default (): Config => ({
   port: parseInt(process.env.PORT || '3000', 10),
   ipfs: {
     host: process.env.IPFS_HOST || '0.0.0.0',
-    port: parseInt(process.env.IPFS_PORT || '5001', 10),
+    tcpPort: parseInt(process.env.IPFS_PORT || '5001', 10),
+    wsPort: parseInt(process.env.IPFS_WS_PORT || '5002', 10),
     protocol: process.env.IPFS_PROTOCOL || 'http',
   },
   orbitdb: {

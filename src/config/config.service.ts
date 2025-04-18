@@ -20,8 +20,12 @@ export class ConfigService {
     return this.configService.get<Config['ipfs']>('ipfs')?.host || '127.0.0.1';
   }
 
-  get ipfsPort(): number {
-    return this.configService.get<Config['ipfs']>('ipfs')?.port || 5001;
+  get ipfsTcpPort(): number {
+    return this.configService.get<Config['ipfs']>('ipfs')?.tcpPort || 5001;
+  }
+
+  get ipfsWsPort(): number {
+    return this.configService.get<Config['ipfs']>('ipfs')?.wsPort || 5002;
   }
 
   get ipfsProtocol(): string {

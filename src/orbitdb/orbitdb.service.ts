@@ -26,12 +26,15 @@ import {
 } from '@libp2p/circuit-relay-v2';
 import { dcutr } from '@libp2p/dcutr';
 import { autoNAT } from '@libp2p/autonat';
-import { multiaddr } from '@multiformats/multiaddr';
+import { multiaddr, Multiaddr } from '@multiformats/multiaddr';
 import { ping } from '@libp2p/ping';
 import { bootstrap } from '@libp2p/bootstrap';
 import { uPnPNAT } from '@libp2p/upnp-nat';
 import { LevelBlockstore } from 'blockstore-level';
 import { preSharedKey } from '@libp2p/pnet';
+import { PeerId, DialOptions } from '@libp2p/interface';
+import { setTimeout } from 'node:timers/promises';
+import { webSockets } from '@libp2p/websockets';
 
 @Injectable()
 export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
@@ -54,17 +57,8 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
   }
 
   async waitForReady() {
-    if (!this.isReady) {
-      await new Promise<void>((resolve) => {
-        const checkReady = () => {
-          if (this.isReady) {
-            resolve();
-          } else {
-            setTimeout(checkReady, 100);
-          }
-        };
-        checkReady();
-      });
+    while (!this.isReady) {
+      await setTimeout(100);
     }
   }
 
@@ -83,14 +77,12 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
         libp2p: {
           addresses: {
             listen: [
-              `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsPort}`,
+              `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsTcpPort}`,
+              `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsWsPort}/ws`,
               '/p2p-circuit',
             ],
-            announce: [
-              `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsPort}`,
-            ],
           },
-          transports: [circuitRelayTransport(), tcp()],
+          transports: [circuitRelayTransport(), webSockets(), tcp()],
           streamMuxers: [yamux()],
           peerDiscovery: [
             pubsubPeerDiscovery({
@@ -112,7 +104,10 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
             autoNAT: autoNAT(),
             dcutr: dcutr(),
             relay: circuitRelayServer(),
-            pubsub: gossipsub(),
+            pubsub: gossipsub({
+              canRelayMessage: true,
+              allowPublishToZeroTopicPeers: true,
+            }),
             identify: identify(),
             identifyPush: identifyPush(),
             ping: ping(),
@@ -129,7 +124,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
 
       this.helia.libp2p.addEventListener('peer:discovery', (evt) => {
         this.logger.log('Found peer: ', evt.detail.id.toString());
-        void this.helia.libp2p.dial(evt.detail.id);
+        void this.connectTo(evt.detail.id);
       });
 
       const addresses = this.helia.libp2p.getMultiaddrs();
@@ -165,6 +160,41 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  async connectTo(
+    peer: PeerId | Multiaddr | Multiaddr[],
+    options?: DialOptions,
+  ) {
+    const maxRetries = 20;
+    let retries = 0;
+
+    while (retries < maxRetries) {
+      try {
+        await this.helia.libp2p.dial(peer, options);
+        this.logger.log(
+          `Successfully connected to peer after ${retries} retries`,
+        );
+        return;
+      } catch (err) {
+        const error = err as Error;
+        retries++;
+
+        if (retries >= maxRetries) {
+          this.logger.error(
+            `Failed to connect to peer after ${maxRetries} attempts: ${error.message}`,
+            error.stack,
+          );
+          return;
+        }
+
+        this.logger.warn(
+          `Error connecting to peer (attempt ${retries}/${maxRetries}): ${error.message}`,
+        );
+
+        await setTimeout(1000 * Math.min(retries, 5));
+      }
     }
   }
 

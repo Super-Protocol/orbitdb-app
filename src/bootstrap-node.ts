@@ -20,6 +20,11 @@ import {
 import { identify, identifyPush } from '@libp2p/identify';
 import { dcutr } from '@libp2p/dcutr';
 
+if (!process.env.SWARM_KEY) {
+  console.error('SWARM_KEY is not set');
+  process.exit(1);
+}
+
 const privateKeyFile = './keys.json';
 
 export async function loadOrCreatePrivateKey() {
@@ -51,13 +56,14 @@ export async function loadOrCreatePrivateKey() {
     return key;
   }
 }
-
+const tcpPort = process.env.TCP_PORT || 4001;
+const wsPort = process.env.WS_PORT || 4002;
 const libp2p = await createLibp2p({
   privateKey: await loadOrCreatePrivateKey(),
   addresses: {
     listen: [
-      '/ip4/0.0.0.0/tcp/4001',
-      '/ip4/0.0.0.0/tcp/4002/ws',
+      `/ip4/0.0.0.0/tcp/${tcpPort}`,
+      `/ip4/0.0.0.0/tcp/${wsPort}/ws`,
       '/p2p-circuit',
     ],
   },
@@ -82,7 +88,7 @@ const libp2p = await createLibp2p({
     dcutr: dcutr(),
   },
   connectionProtector: preSharedKey({
-    psk: Buffer.from(process.env.SWARM_KEY!, 'base64'),
+    psk: Buffer.from(process.env.SWARM_KEY, 'base64'),
   }),
 });
 

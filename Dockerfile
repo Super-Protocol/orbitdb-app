@@ -15,8 +15,7 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
-COPY .env* ./
 
 EXPOSE 3000
 
-CMD ["node", "--experimental-specifier-resolution=node", "dist/main"] 
+ENTRYPOINT [ "npm", "run" ] 
