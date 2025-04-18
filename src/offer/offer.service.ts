@@ -25,4 +25,8 @@ export class OfferService {
   async getOffers(): Promise<Offer[]> {
     return this.database.all();
   }
+
+  async deleteOffer(id: string) {
+    await this.database.del(id);
+  }
 }

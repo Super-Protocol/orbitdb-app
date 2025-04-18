@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { OfferService } from './offer.service.js';
 import { OfferCreateDto } from './offer-create.dto.js';
 
@@ -19,5 +19,10 @@ export class OfferController {
   @Get()
   async getOffers() {
     return this.offerService.getOffers();
+  }
+
+  @Delete(':id')
+  async deleteOffer(@Param('id') id: string) {
+    return this.offerService.deleteOffer(id);
   }
 }

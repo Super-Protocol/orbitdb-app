@@ -81,4 +81,9 @@ export class Database<T extends { id: string }> implements OnModuleInit {
       ...offer,
     }));
   }
+
+  async del(key: string) {
+    await this.initPromise;
+    await this.database.del(key);
+  }
 }
