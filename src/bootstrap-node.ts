@@ -14,8 +14,11 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import { keys } from '@libp2p/crypto';
 import { kadDHT } from '@libp2p/kad-dht';
+import { webRTC } from '@libp2p/webrtc';
+import { mplex } from '@libp2p/mplex';
 import {
   circuitRelayServer,
+  circuitRelayTransport,
   // type CircuitRelayService,
 } from '@libp2p/circuit-relay-v2';
 import { identify, identifyPush } from '@libp2p/identify';
@@ -30,12 +33,16 @@ const privateKeyFile = './keys.json';
 
 export async function loadOrCreatePrivateKey() {
   try {
-    const raw = await fs.readFile(privateKeyFile, 'utf-8');
-    const json = JSON.parse(raw);
-    const privKeyBytes = uint8ArrayFromString(
-      json.privKey as string,
-      'base64pad',
-    );
+    let rawBase64encoded: string;
+
+    if (process.env.PRIVATE_KEY) {
+      rawBase64encoded = process.env.PRIVATE_KEY;
+    } else {
+      const raw = await fs.readFile(privateKeyFile, 'utf-8');
+      const json = JSON.parse(raw);
+      rawBase64encoded = json.privKey as string;
+    }
+    const privKeyBytes = uint8ArrayFromString(rawBase64encoded, 'base64pad');
     const privateKey = keys.privateKeyFromRaw(privKeyBytes);
     console.log('✅ Private key loaded from file');
     return privateKey;
@@ -66,17 +73,18 @@ const libp2p = await createLibp2p({
       `/ip4/0.0.0.0/tcp/${tcpPort}`,
       `/ip4/0.0.0.0/tcp/${wsPort}/ws`,
       '/p2p-circuit',
+      '/webrtc',
     ],
   },
-  transports: [tcp(), webSockets()],
+  transports: [tcp(), webSockets(), circuitRelayTransport(), webRTC()],
   connectionEncrypters: [noise(), tls()],
-  streamMuxers: [yamux()],
+  streamMuxers: [yamux(), mplex()],
   peerDiscovery: [
     pubsubPeerDiscovery({
       interval: 1000,
     }),
   ],
-
+  connectionManager: {},
   services: {
     autoNAT: autoNAT(),
     relay: circuitRelayServer({}),
@@ -84,10 +92,13 @@ const libp2p = await createLibp2p({
     identify: identify(),
     pubsub: gossipsub({
       canRelayMessage: true,
+      allowPublishToZeroTopicPeers: true,
     }),
     identifyPush: identifyPush(),
     dcutr: dcutr(),
-    dht: kadDHT(),
+    dht: kadDHT({
+      clientMode: false,
+    }),
   },
   connectionProtector: preSharedKey({
     psk: Buffer.from(process.env.SWARM_KEY, 'base64'),

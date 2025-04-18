@@ -21,11 +21,11 @@ export class ConfigService {
   }
 
   get ipfsTcpPort(): number {
-    return this.configService.get<Config['ipfs']>('ipfs')?.tcpPort || 5001;
+    return this.configService.get<Config['ipfs']>('ipfs')!.tcpPort;
   }
 
   get ipfsWsPort(): number {
-    return this.configService.get<Config['ipfs']>('ipfs')?.wsPort || 5002;
+    return this.configService.get<Config['ipfs']>('ipfs')!.wsPort;
   }
 
   get ipfsProtocol(): string {
@@ -48,5 +48,11 @@ export class ConfigService {
 
   get bootstrapNode(): string | undefined {
     return this.configService.get<Config['orbitdb']>('orbitdb')?.bootstrapNode;
+  }
+
+  get databases(): Record<string, string> {
+    return (
+      this.configService.get<Config['orbitdb']>('orbitdb')?.databases || {}
+    );
   }
 }

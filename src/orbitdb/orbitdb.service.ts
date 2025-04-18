@@ -9,6 +9,7 @@ import { createHelia, HeliaLibp2p } from 'helia';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { tcp } from '@libp2p/tcp';
 import { yamux } from '@chainsafe/libp2p-yamux';
+import { mplex } from '@libp2p/mplex';
 import { httpGatewayRouting } from '@helia/routers';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
 import {
@@ -36,6 +37,7 @@ import { PeerId, DialOptions } from '@libp2p/interface';
 import { setTimeout } from 'node:timers/promises';
 import { webSockets } from '@libp2p/websockets';
 import { kadDHT } from '@libp2p/kad-dht';
+import { webRTC } from '@libp2p/webrtc';
 
 @Injectable()
 export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
@@ -81,10 +83,11 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
               `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsTcpPort}`,
               `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsWsPort}/ws`,
               '/p2p-circuit',
+              '/webrtc',
             ],
           },
-          transports: [circuitRelayTransport(), webSockets(), tcp()],
-          streamMuxers: [yamux()],
+          transports: [circuitRelayTransport(), webSockets(), tcp(), webRTC()],
+          streamMuxers: [yamux(), mplex()],
           peerDiscovery: [
             pubsubPeerDiscovery({
               interval: 1000,
@@ -100,7 +103,9 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
           connectionProtector: preSharedKey({
             psk: this.configService.swarmKey,
           }),
-          connectionManager: {},
+          connectionManager: {
+            // reconnectRetries: Infinity,
+          },
           services: {
             autoNAT: autoNAT(),
             dcutr: dcutr(),
@@ -112,7 +117,9 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
             identify: identify(),
             identifyPush: identifyPush(),
             ping: ping(),
-            dht: kadDHT(),
+            dht: kadDHT({
+              clientMode: false,
+            }),
             upnp: uPnPNAT(),
           },
         },
@@ -238,11 +245,13 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
         type: 'documents',
         AccessController: IPFSAccessController(),
 
-        // sync: false,
+        sync: true,
         ...options,
       });
 
-      this.logger.log(`Database '${name}'  opened successfully`);
+      this.logger.log(
+        `Database ${name}: '${database.address}'  opened successfully`,
+      );
       return database;
     } catch (err) {
       const error = err as Error;

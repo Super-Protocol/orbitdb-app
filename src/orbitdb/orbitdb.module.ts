@@ -3,6 +3,7 @@ import { OrbitDBService } from './orbitdb.service.js';
 import { ORBITDB_DATABASE_TOKEN } from './inject-database.decorator.js';
 import { OpenDatabaseOptions } from '@orbitdb/core';
 import { Database } from './database.js';
+import { ConfigService } from '../config/config.service.js';
 
 export interface OrbitDBModuleOptions {
   name: string;
@@ -32,10 +33,17 @@ export class OrbitDBModule {
       providers: [
         {
           provide: `${ORBITDB_DATABASE_TOKEN}_${name}`,
-          useFactory: async (orbitdbService: OrbitDBService) => {
-            return new Database(orbitdbService, name, options);
+          useFactory: async (
+            orbitdbService: OrbitDBService,
+            configService: ConfigService,
+          ) => {
+            return new Database(
+              orbitdbService,
+              configService.databases[name] || name,
+              options,
+            );
           },
-          inject: [OrbitDBService],
+          inject: [OrbitDBService, ConfigService],
         },
       ],
       exports: [`${ORBITDB_DATABASE_TOKEN}_${name}`],

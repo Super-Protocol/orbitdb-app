@@ -11,6 +11,9 @@ export interface Config {
     bootstrapNode?: string;
     directory: string;
     swarmKey: string;
+    databases: {
+      offers: string;
+    };
   };
 }
 
@@ -19,13 +22,16 @@ export default (): Config => ({
   port: parseInt(process.env.PORT || '3000', 10),
   ipfs: {
     host: process.env.IPFS_HOST || '0.0.0.0',
-    tcpPort: parseInt(process.env.IPFS_PORT || '5001', 10),
-    wsPort: parseInt(process.env.IPFS_WS_PORT || '5002', 10),
+    tcpPort: parseInt(process.env.TCP_PORT || '0', 10),
+    wsPort: parseInt(process.env.WS_PORT || '0', 10),
     protocol: process.env.IPFS_PROTOCOL || 'http',
   },
   orbitdb: {
     bootstrapNode: process.env.BOOTSTRAP_NODE,
-    directory: process.env.ORBITDB_DIRECTORY || './data/provider',
+    directory: process.env.ORBITDB_DIRECTORY || `./data/${crypto.randomUUID()}`,
     swarmKey: process.env.SWARM_KEY!,
+    databases: {
+      offers: process.env.OFFERS_DATABASE || 'offers',
+    },
   },
 });
