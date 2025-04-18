@@ -35,6 +35,7 @@ import { preSharedKey } from '@libp2p/pnet';
 import { PeerId, DialOptions } from '@libp2p/interface';
 import { setTimeout } from 'node:timers/promises';
 import { webSockets } from '@libp2p/websockets';
+import { kadDHT } from '@libp2p/kad-dht';
 
 @Injectable()
 export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
@@ -111,6 +112,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
             identify: identify(),
             identifyPush: identifyPush(),
             ping: ping(),
+            dht: kadDHT(),
             upnp: uPnPNAT(),
           },
         },

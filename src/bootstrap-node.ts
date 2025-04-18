@@ -13,6 +13,7 @@ import * as fs from 'fs/promises';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import { keys } from '@libp2p/crypto';
+import { kadDHT } from '@libp2p/kad-dht';
 import {
   circuitRelayServer,
   // type CircuitRelayService,
@@ -86,6 +87,7 @@ const libp2p = await createLibp2p({
     }),
     identifyPush: identifyPush(),
     dcutr: dcutr(),
+    dht: kadDHT(),
   },
   connectionProtector: preSharedKey({
     psk: Buffer.from(process.env.SWARM_KEY, 'base64'),
