@@ -46,8 +46,10 @@ export class ConfigService {
     );
   }
 
-  get bootstrapNode(): string | undefined {
-    return this.configService.get<Config['orbitdb']>('orbitdb')?.bootstrapNode;
+  get bootstrapNodes(): string[] | undefined {
+    return this.configService
+      .get<Config['orbitdb']>('orbitdb')
+      ?.bootstrapNodes?.split(',');
   }
 
   get databases(): Record<string, string> {

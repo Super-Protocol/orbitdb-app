@@ -8,7 +8,7 @@ export interface Config {
     protocol: string;
   };
   orbitdb: {
-    bootstrapNode?: string;
+    bootstrapNodes?: string;
     directory: string;
     swarmKey: string;
     databases: {
@@ -27,7 +27,7 @@ export default (): Config => ({
     protocol: process.env.IPFS_PROTOCOL || 'http',
   },
   orbitdb: {
-    bootstrapNode: process.env.BOOTSTRAP_NODE,
+    bootstrapNodes: process.env.BOOTSTRAP_NODES,
     directory: process.env.ORBITDB_DIRECTORY || `./data/${crypto.randomUUID()}`,
     swarmKey: process.env.SWARM_KEY!,
     databases: {

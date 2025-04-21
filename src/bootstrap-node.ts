@@ -110,6 +110,7 @@ const libp2p = await createLibp2p({
     ping: ping(),
     identify: identify(),
     pubsub: gossipsub({
+      doPX: true,
       canRelayMessage: true,
       allowPublishToZeroTopicPeers: true,
     }),
@@ -133,11 +134,3 @@ console.log('🔗 Multiaddr:', libp2p.getMultiaddrs());
 libp2p.addEventListener('peer:connect', (peerId) => {
   console.log('🔗 Connected peer:', peerId.detail.toString());
 });
-
-setInterval(() => {
-  const peers = libp2p.getPeers();
-
-  console.log(
-    `PeerID: ${libp2p.peerId.toString()}, peers: ${JSON.stringify(peers)}`,
-  );
-}, 5000);

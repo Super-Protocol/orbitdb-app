@@ -12,6 +12,7 @@ import { yamux } from '@chainsafe/libp2p-yamux';
 import { mplex } from '@libp2p/mplex';
 import { httpGatewayRouting } from '@helia/routers';
 import { pubsubPeerDiscovery } from '@libp2p/pubsub-peer-discovery';
+import { bitswap } from '@helia/block-brokers';
 import {
   BaseDatabase,
   createOrbitDB,
@@ -78,6 +79,14 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
         // datastore,
         blockstore,
         routers: [httpGatewayRouting()],
+        blockBrokers: [
+          bitswap({
+            maxOutgoingMessageSize: 1024 * 1024 * 10,
+            maxIncomingMessageSize: 1024 * 1024 * 10,
+            maxInboundStreams: 100,
+            maxOutboundStreams: 500,
+          }),
+        ],
         libp2p: {
           addresses: {
             listen: [
@@ -91,12 +100,12 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
           streamMuxers: [yamux(), mplex()],
           peerDiscovery: [
             pubsubPeerDiscovery({
-              interval: 1000,
+              interval: 5e3,
             }),
-            ...(this.configService.bootstrapNode
+            ...(this.configService.bootstrapNodes
               ? [
                   bootstrap({
-                    list: [this.configService.bootstrapNode],
+                    list: this.configService.bootstrapNodes,
                   }),
                 ]
               : []),
@@ -112,7 +121,6 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
             dcutr: dcutr(),
             relay: circuitRelayServer(),
             pubsub: gossipsub({
-              canRelayMessage: true,
               allowPublishToZeroTopicPeers: true,
             }),
             identify: identify(),
@@ -142,7 +150,9 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.orbitdb.ipfs.libp2p.addEventListener('peer:connect', (peerId) => {
-        this.logger.log(`peer:connect`, peerId.detail.toString());
+        this.logger.log(`peer:connect`, {
+          connectedPeer: peerId.detail.toString(),
+        });
       });
       this.orbitdb.ipfs.libp2p.addEventListener('peer:disconnect', (peerId) => {
         this.logger.log(`peer:disconnect`, peerId.detail);
@@ -173,34 +183,17 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
     peer: PeerId | Multiaddr | Multiaddr[],
     options?: DialOptions,
   ) {
-    const maxRetries = 20;
-    let retries = 0;
-
-    while (retries < maxRetries) {
-      try {
-        await this.helia.libp2p.dial(peer, options);
-        this.logger.log(
-          `Successfully connected to peer after ${retries} retries`,
-        );
-        return;
-      } catch (err) {
-        const error = err as Error;
-        retries++;
-
-        if (retries >= maxRetries) {
-          this.logger.error(
-            `Failed to connect to peer after ${maxRetries} attempts: ${error.message}`,
-            error.stack,
-          );
-          return;
-        }
-
-        this.logger.warn(
-          `Error connecting to peer (attempt ${retries}/${maxRetries}): ${error.message}`,
-        );
-
-        await setTimeout(1000 * Math.min(retries, 5));
-      }
+    try {
+      await this.helia.libp2p.dial(peer, options);
+      this.logger.log(`Successfully connected to peer ${peer.toString()}`);
+      return;
+    } catch (err) {
+      const error = err as Error;
+      this.logger.error(
+        `Failed to connect to peer: ${error.message}`,
+        error.stack,
+      );
+      return;
     }
   }
 

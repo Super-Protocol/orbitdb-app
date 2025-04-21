@@ -1,14 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDatabase } from '../orbitdb/inject-database.decorator.js';
 import { Offer } from './types.js';
 import { Database } from '../orbitdb/database.js';
 
 @Injectable()
 export class OfferService {
+  private readonly logger = new Logger(OfferService.name);
   constructor(@InjectDatabase('offer') private database: Database<Offer>) {}
 
   async createOffer(offer: Omit<Offer, 'id'>) {
     const id = crypto.randomUUID();
+    this.logger.log(`Creating offer: ${id}`);
     await this.database.put({ ...offer, id });
     return { id, ...offer };
   }
