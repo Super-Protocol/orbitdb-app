@@ -1,18 +1,16 @@
 import { Global, Module } from '@nestjs/common';
-import { ConfigModule as NestConfigModule } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import configuration from './configuration.js';
-import { ConfigService } from './config.service.js';
+import { AppConfigService as AppConfigService } from './config.service.js';
 
 @Global()
 @Module({
   imports: [
-    NestConfigModule.forRoot({
+    ConfigModule.forRoot({
       load: [configuration],
-      isGlobal: true,
-      cache: true,
     }),
   ],
-  providers: [ConfigService],
-  exports: [ConfigService],
+  providers: [AppConfigService],
+  exports: [AppConfigService],
 })
-export class ConfigModule {}
+export class AppConfigModule {}

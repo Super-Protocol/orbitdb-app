@@ -24,12 +24,7 @@ import {
 import { identify, identifyPush } from '@libp2p/identify';
 import { dcutr } from '@libp2p/dcutr';
 
-if (!process.env.SWARM_KEY) {
-  console.error('SWARM_KEY is not set');
-  process.exit(1);
-}
-
-const privateKeyFile = './keys.json';
+const privateKeyFile = process.env.PRIVATE_KEY_FILE || './keys.json';
 
 export async function loadOrCreatePrivateKey() {
   try {
@@ -64,73 +59,91 @@ export async function loadOrCreatePrivateKey() {
     return key;
   }
 }
-const tcpPort = process.env.TCP_PORT || 4001;
-const wsPort = process.env.WS_PORT || 4002;
-const libp2p = await createLibp2p({
-  privateKey: await loadOrCreatePrivateKey(),
-  addresses: {
-    listen: [
-      `/ip4/0.0.0.0/tcp/${tcpPort}`,
-      `/ip4/0.0.0.0/tcp/${wsPort}/ws`,
-      '/p2p-circuit',
-      '/webrtc',
+
+export async function bootstrap() {
+  if (!process.env.SWARM_KEY) {
+    console.error('SWARM_KEY is not set');
+    process.exit(1);
+  }
+
+  const tcpPort = process.env.TCP_PORT || 4001;
+  const wsPort = process.env.WS_PORT || 4002;
+  const libp2p = await createLibp2p({
+    privateKey: await loadOrCreatePrivateKey(),
+    addresses: {
+      listen: [
+        `/ip4/0.0.0.0/tcp/${tcpPort}`,
+        `/ip4/0.0.0.0/tcp/${wsPort}/ws`,
+        '/p2p-circuit',
+        '/webrtc',
+      ],
+    },
+    transports: [
+      tcp(),
+      webSockets({}),
+      circuitRelayTransport(),
+      webRTC({
+        rtcConfiguration: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478?transport=udp' },
+          ],
+        },
+      }),
     ],
-  },
-  transports: [
-    tcp(),
-    webSockets(),
-    circuitRelayTransport(),
-    webRTC({
-      rtcConfiguration: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478?transport=udp' },
-        ],
-      },
+    connectionEncrypters: [noise(), tls()],
+    streamMuxers: [yamux(), mplex()],
+    peerDiscovery: [
+      pubsubPeerDiscovery({
+        interval: 1000,
+      }),
+    ],
+    connectionManager: {},
+    services: {
+      autoNAT: autoNAT(),
+      relay: circuitRelayServer({
+        maxInboundHopStreams: 1000,
+        maxOutboundHopStreams: 1000,
+        reservations: {
+          maxReservations: 100,
+          reservationClearInterval: 1000 * 60,
+        },
+      }),
+      ping: ping(),
+      identify: identify(),
+      pubsub: gossipsub({
+        doPX: true,
+        canRelayMessage: true,
+        allowPublishToZeroTopicPeers: true,
+      }),
+      identifyPush: identifyPush(),
+      dcutr: dcutr(),
+      dht: kadDHT({
+        clientMode: false,
+      }),
+    },
+    connectionProtector: preSharedKey({
+      psk: Buffer.from(process.env.SWARM_KEY, 'base64'),
     }),
-  ],
-  connectionEncrypters: [noise(), tls()],
-  streamMuxers: [yamux(), mplex()],
-  peerDiscovery: [
-    pubsubPeerDiscovery({
-      interval: 1000,
-    }),
-  ],
-  connectionManager: {},
-  services: {
-    autoNAT: autoNAT(),
-    relay: circuitRelayServer({
-      maxInboundHopStreams: 1000,
-      maxOutboundHopStreams: 1000,
-      reservations: {
-        maxReservations: 100,
-        reservationClearInterval: 1000 * 60,
-      },
-    }),
-    ping: ping(),
-    identify: identify(),
-    pubsub: gossipsub({
-      doPX: true,
-      canRelayMessage: true,
-      allowPublishToZeroTopicPeers: true,
-    }),
-    identifyPush: identifyPush(),
-    dcutr: dcutr(),
-    dht: kadDHT({
-      clientMode: false,
-    }),
-  },
-  connectionProtector: preSharedKey({
-    psk: Buffer.from(process.env.SWARM_KEY, 'base64'),
-  }),
-});
+  });
 
-await libp2p.start();
+  await libp2p.start();
 
-console.log('✅ Bootstrap + Relay node started!');
-console.log('🆔 PeerId:', libp2p.peerId.toString());
-console.log('🔗 Multiaddr:', libp2p.getMultiaddrs());
+  console.log('✅ Bootstrap + Relay node started!');
+  console.log('🆔 PeerId:', libp2p.peerId.toString());
+  console.log('🔗 Multiaddr:', libp2p.getMultiaddrs());
 
-libp2p.addEventListener('peer:connect', (peerId) => {
-  console.log('🔗 Connected peer:', peerId.detail.toString());
-});
+  libp2p.addEventListener('peer:connect', (peerId) => {
+    console.log('🔗 Connected peer:', peerId.detail.toString());
+  });
+
+  return libp2p;
+}
+
+// Прямой запуск, если файл выполняется напрямую
+if (import.meta.url === `file://${process.argv[1]}`) {
+  bootstrap().catch((err) => {
+    console.error('Failed to start bootstrap node:', err);
+    process.exit(1);
+  });
+}

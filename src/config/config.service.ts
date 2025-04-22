@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService as NestConfigService } from '@nestjs/config';
-import { Config } from './configuration.js';
+import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { AppConfig } from './schema.js';
 
 @Injectable()
-export class ConfigService {
+export class AppConfigService {
   private keyPath = './keys/libp2p-ed25519.key';
 
-  constructor(private configService: NestConfigService<Config>) {}
+  constructor(
+    @Inject(ConfigService) private readonly configService: ConfigService,
+  ) {}
 
   get nodeEnv(): string {
     return this.configService.get<string>('nodeEnv') || 'development';
@@ -17,44 +19,42 @@ export class ConfigService {
   }
 
   get ipfsHost(): string {
-    return this.configService.get<Config['ipfs']>('ipfs')?.host || '127.0.0.1';
+    return (
+      this.configService.get<AppConfig['ipfs']>('ipfs')?.host || '127.0.0.1'
+    );
   }
 
   get ipfsTcpPort(): number {
-    return this.configService.get<Config['ipfs']>('ipfs')!.tcpPort;
+    return this.configService.get<AppConfig['ipfs']>('ipfs')!.tcpPort;
   }
 
   get ipfsWsPort(): number {
-    return this.configService.get<Config['ipfs']>('ipfs')!.wsPort;
-  }
-
-  get ipfsProtocol(): string {
-    return this.configService.get<Config['ipfs']>('ipfs')?.protocol || 'http';
+    return this.configService.get<AppConfig['ipfs']>('ipfs')!.wsPort;
   }
 
   get orbitdbDirectory(): string {
     return (
-      this.configService.get<Config['orbitdb']>('orbitdb')?.directory ||
+      this.configService.get<AppConfig['orbitdb']>('orbitdb')?.directory ||
       './orbitdb'
     );
   }
 
-  get swarmKey(): Uint8Array<ArrayBuffer> {
+  get swarmKey(): Uint8Array {
     return Buffer.from(
-      this.configService.get<Config['orbitdb']>('orbitdb')!.swarmKey,
+      this.configService.get<AppConfig['orbitdb']>('orbitdb')!.swarmKey || '',
       'base64',
     );
   }
 
   get bootstrapNodes(): string[] | undefined {
     return this.configService
-      .get<Config['orbitdb']>('orbitdb')
+      .get<AppConfig['orbitdb']>('orbitdb')
       ?.bootstrapNodes?.split(',');
   }
 
   get databases(): Record<string, string> {
     return (
-      this.configService.get<Config['orbitdb']>('orbitdb')?.databases || {}
+      this.configService.get<AppConfig['orbitdb']>('orbitdb')?.databases || {}
     );
   }
 }

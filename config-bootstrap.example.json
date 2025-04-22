@@ -1,0 +1,8 @@
+{
+  "runMode": "bootstrap",
+  "ipfs": {
+    "host": "0.0.0.0",
+    "tcpPort": 3001,
+    "wsPort": 3002
+  }
+}

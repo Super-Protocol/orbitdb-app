@@ -20,7 +20,6 @@ import {
   OpenDatabaseOptions,
   OrbitDB,
 } from '@orbitdb/core';
-import { ConfigService } from '../config/config.service.js';
 import { Libp2p } from 'libp2p';
 import {
   circuitRelayTransport,
@@ -28,17 +27,17 @@ import {
 } from '@libp2p/circuit-relay-v2';
 import { dcutr } from '@libp2p/dcutr';
 import { autoNAT } from '@libp2p/autonat';
-import { Multiaddr } from '@multiformats/multiaddr';
 import { ping } from '@libp2p/ping';
 import { bootstrap } from '@libp2p/bootstrap';
 import { uPnPNAT } from '@libp2p/upnp-nat';
 import { LevelBlockstore } from 'blockstore-level';
 import { preSharedKey } from '@libp2p/pnet';
-import { PeerId, DialOptions } from '@libp2p/interface';
+import { DialOptions, PeerInfo } from '@libp2p/interface';
 import { setTimeout } from 'node:timers/promises';
 import { webSockets } from '@libp2p/websockets';
 import { kadDHT } from '@libp2p/kad-dht';
 import { webRTC } from '@libp2p/webrtc';
+import { AppConfigService } from '../config/config.service.js';
 
 @Injectable()
 export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
@@ -49,7 +48,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
   private pubsub: GossipSub;
   private isReady = false;
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: AppConfigService) {}
 
   async onModuleInit() {
     await this.connect();
@@ -138,7 +137,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
 
       this.helia.libp2p.addEventListener('peer:discovery', (evt) => {
         this.logger.log('Found peer: ', evt.detail.id.toString());
-        void this.connectTo(evt.detail.id);
+        void this.connectTo(evt.detail);
       });
 
       const addresses = this.helia.libp2p.getMultiaddrs();
@@ -179,18 +178,17 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async connectTo(
-    peer: PeerId | Multiaddr | Multiaddr[],
-    options?: DialOptions,
-  ) {
+  async connectTo(peer: PeerInfo, options?: DialOptions) {
     try {
-      await this.helia.libp2p.dial(peer, options);
-      this.logger.log(`Successfully connected to peer ${peer.toString()}`);
+      await this.helia.libp2p.dial(peer.multiaddrs, options);
+      this.logger.log(
+        `Successfully connected to peer ${peer.id.toString()} via ${peer.multiaddrs.toString()}`,
+      );
       return;
     } catch (err) {
       const error = err as Error;
       this.logger.error(
-        `Failed to connect to peer: ${error.message}`,
+        `Failed to connect to peer: ${peer.id.toString()}, addreses: ${peer.multiaddrs.toString()}\n error:\n${error.message}`,
         error.stack,
       );
       return;
