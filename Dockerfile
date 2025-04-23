@@ -18,4 +18,4 @@ COPY package*.json ./
 
 EXPOSE 3000
 
-ENTRYPOINT [ "npm", "run" ] 
+ENTRYPOINT [ "node", "dist/index.js" ] 
