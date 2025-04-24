@@ -5,6 +5,7 @@ export default (): AppConfig => {
     nodeEnv: process.env.NODE_ENV as 'development' | 'production' | 'test',
     port: parseInt(process.env.PORT || '3000', 10),
     runMode: (process.env.RUN_MODE as 'node' | 'bootstrap') || 'node',
+    debug: process.env.DEBUG || '',
     ipfs: {
       host: process.env.IPFS_HOST || '0.0.0.0',
       tcpPort: parseInt(process.env.TCP_PORT || '4001', 10),

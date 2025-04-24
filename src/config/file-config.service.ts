@@ -89,6 +89,9 @@ export class FileConfigService {
     if (!process.env.PORT) {
       process.env.PORT = validConfig.port.toString();
     }
+    if (!process.env.DEBUG) {
+      process.env.DEBUG = validConfig.debug;
+    }
   }
 
   private createConfigObject(appConfig: unknown): Config {

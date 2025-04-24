@@ -29,6 +29,7 @@ export const appConfigSchema = z.object({
   runMode: z.enum(['node', 'bootstrap']).default('node'),
   ipfs: ipfsSchema.default({}),
   orbitdb: orbitdbSchema.default({}),
+  debug: z.string().default(''),
 });
 
 // Схема для общей конфигурации
