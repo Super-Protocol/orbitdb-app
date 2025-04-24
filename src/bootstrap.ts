@@ -27,9 +27,11 @@ export class AppBootstrap {
   }
 
   private async setSwarmKeyEnvironment(): Promise<void> {
-    const swarmKey = await getOrGenerateSwarmKey();
-    process.env.SWARM_KEY = swarmKey;
-    console.log(`✅ Swarm key set to ${swarmKey}`);
+    if (!process.env.SWARM_KEY) {
+      const swarmKey = await getOrGenerateSwarmKey();
+      process.env.SWARM_KEY = swarmKey;
+      console.log(`✅ Swarm key set to ${swarmKey}`);
+    }
   }
 
   private async launchApplication(config: AppConfig): Promise<void> {

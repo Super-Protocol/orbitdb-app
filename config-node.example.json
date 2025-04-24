@@ -8,5 +8,6 @@
   "orbitdb": {
     "bootstrapNodes": "/ip4/127.0.0.1/tcp/3002/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN",
     "directory": "./data"
-  }
+  },
+  "debug": "*"
 }
