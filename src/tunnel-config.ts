@@ -3,19 +3,9 @@ import path from 'path';
 
 dotenv.config();
 
-if (!process.env.BLOCKCHAIN_URL) {
-  throw new Error('BLOCKCHAIN_URL is not set');
-}
-
-if (!process.env.BLOCKCHAIN_CONTRACT_ADDRESS) {
-  throw new Error('BLOCKCHAIN_CONTRACT_ADDRESS is not set');
-}
-
 export const config = {
   appName: 'orbit-app',
   appVersion: '0.0.1',
-  blockchainUrl: process.env.BLOCKCHAIN_URL,
-  blockchainContractAddress: process.env.BLOCKCHAIN_CONTRACT_ADDRESS,
   logLevel: (process.env.LOG_LEVEL as string) || 'trace',
   inputDataFolder: (process.env.INPUT_DATA_FOLDER as string) || '/sp/inputs',
   secretsDataFolder:

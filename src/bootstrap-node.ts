@@ -73,14 +73,19 @@ export async function bootstrap() {
     addresses: {
       listen: [
         `/ip4/0.0.0.0/tcp/${tcpPort}`,
-        `/ip4/0.0.0.0/tcp/${wsPort}/ws`,
+        `/ip4/0.0.0.0/tcp/${wsPort}/wss`,
         '/p2p-circuit',
         '/webrtc',
       ],
     },
     transports: [
       tcp(),
-      webSockets({}),
+      webSockets({
+        https: {
+          key: process.env.TLS_KEY,
+          cert: process.env.TLS_CERT,
+        },
+      }),
       circuitRelayTransport(),
       webRTC({
         rtcConfiguration: {

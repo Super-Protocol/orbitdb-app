@@ -1,26 +1,23 @@
-import { TunnelClient, TunnelClientOptions } from '@super-protocol/tunnels-lib';
-
 import {
-  readConfiguration,
-  getDomainConfigs,
-  TunnelsConfiguration,
-} from '@super-protocol/solution-utils';
+  TunnelClient,
+  TunnelClientOptions,
+  findConfigsRecursive,
+} from '@super-protocol/tunnels-lib';
+import { pino } from 'pino';
 import { config } from './tunnel-config.js';
 
-console.log('CONFIG:', config);
+const logger = pino({
+  level: 'trace',
+}).child({
+  app: config.appName,
+  version: config.appVersion,
+});
 
 const run = async (): Promise<void> => {
-  const configuration = await readConfiguration(config.configurationPath);
-  const tunnelsConfiguration = configuration?.solution?.tunnels as
-    | TunnelsConfiguration
-    | undefined;
-
-  const domainConfigs = await getDomainConfigs({
-    tunnels: tunnelsConfiguration,
-    blockchainUrl: config.blockchainUrl,
-    contractAddress: config.blockchainContractAddress,
-    inputDataFolder: config.inputDataFolder,
-  });
+  const domainConfigs = await findConfigsRecursive(
+    config.inputDataFolder,
+    'config.json',
+  );
 
   console.log(
     { domains: domainConfigs.map((config) => config.site.domain) },
@@ -30,6 +27,7 @@ const run = async (): Promise<void> => {
   const options: TunnelClientOptions = {
     applicationPort: config.clientServerPort,
     localServerStartTimeout: config.localServerStartTimeoutMs,
+    logger,
   };
   const tunnelClient = new TunnelClient(
     config.serverFilePath,

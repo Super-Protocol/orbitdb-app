@@ -30,11 +30,11 @@ export class FileConfigService {
   }
 
   private async tryReadConfigFile(): Promise<unknown> {
-    if (!process.env.CONFIG_PATH) {
+    if (!this.configPath) {
       throw new Error('CONFIG_PATH is not set');
     }
     try {
-      const rawData = await fs.readFile(process.env.CONFIG_PATH, 'utf-8');
+      const rawData = await fs.readFile(this.configPath, 'utf-8');
       return this.parseConfigData(rawData);
     } catch (err) {
       console.error('Error reading configuration file:', err);

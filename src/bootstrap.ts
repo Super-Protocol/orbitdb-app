@@ -44,12 +44,15 @@ export class AppBootstrap {
     console.log('Starting in bootstrap mode...');
     const bootstrapConfig = this.ensureValidBootstrapConfig(appConfig);
     process.env.TCP_PORT = bootstrapConfig.ipfs.tcpPort.toString();
-    process.env.WS_PORT = bootstrapConfig.ipfs.wsPort.toString();
+    process.env.WS_PORT =
+      process.env.HTTPS_PORT || bootstrapConfig.ipfs.wsPort.toString();
     await bootstrapNode();
   }
 
   private async launchNodeMode(appConfig: AppConfig): Promise<void> {
     console.log('Starting in node mode...');
+
+    process.env.PORT = process.env.HTTPS_PORT || appConfig.port.toString();
 
     const app = await NestFactory.create(AppModule);
     this.setupSwagger(app);
