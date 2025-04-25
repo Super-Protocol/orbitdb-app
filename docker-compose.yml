@@ -1,19 +1,117 @@
-version: '3.8'
-
 services:
-  orbitdb-app:
+  bootstrap:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: orbitdb-app
+      platform: linux/amd64
+    entrypoint: node dist/main
+    container_name: bootstrap
     ports:
-      - "3200:3000"
-      - "5001:5001"
+      - 4500:4000
+      - 4001:4001
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-    volumes:
-      - orbitdb-data:/app/data
+      RUN_MODE: bootstrap
+      WS_PORT: 4000
+      DEBUG: "*"
+      SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
+      PRIVATE_KEY: rGu+XJU8xAWBUuJDXwsTZAmRUtLGvCxvRP5rh3weYSjl933qXgKO4Ul/anuxErZ5O/s23gZYRCdefxQuxcnLsQ==
+      TLS_CERT: |
+        -----BEGIN CERTIFICATE-----
+        MIIDoTCCAomgAwIBAgIUcqlLqhhbzNV0aGFsYcT958qH0hEwDQYJKoZIhvcNAQEL
+        BQAwYDELMAkGA1UEBhMCUlUxDzANBgNVBAgMBk1vc2NvdzEPMA0GA1UEBwwGTW9z
+        Y293MQ4wDAYDVQQKDAVNeU9yZzELMAkGA1UECwwCSVQxEjAQBgNVBAMMCWJvb3Rz
+        dHJhcDAeFw0yNTA0MjUwODU5MzhaFw0yNjA0MjUwODU5MzhaMGAxCzAJBgNVBAYT
+        AlJVMQ8wDQYDVQQIDAZNb3Njb3cxDzANBgNVBAcMBk1vc2NvdzEOMAwGA1UECgwF
+        TXlPcmcxCzAJBgNVBAsMAklUMRIwEAYDVQQDDAlib290c3RyYXAwggEiMA0GCSqG
+        SIb3DQEBAQUAA4IBDwAwggEKAoIBAQCpu2fXcPCtzIt6umLt38vuGjO2C+w9l7Fb
+        RwHwBEq6e45L1w26IeEDauhlqOi56lDmZJIwGlE+nTZ2zIG9fLT0ddSATpjvcCK8
+        qtntR7WIhp2QLb9Plo6SX8o7JNTX2FQrNDINIBF9nJNqWW+6w7eX28Nlxce60SoK
+        jpox6V0J9gaaveb3mnCi45WHPnG9uRK8LTHzqMigBVtZ2l3eIMNJnoSA4j0laZo/
+        u6m1qgYcX0z3QUSBUMy0vF/hoRBUUL88BDETr2WoV7dueHT+T6OM4FL0WVh0xY7J
+        EAwlo751i4N37iCTVNMfEyJyQNz2tZEcOXyF9hBPC0tkAQwfxOADAgMBAAGjUzBR
+        MB0GA1UdDgQWBBR2FuJySV5BrdVsPiNPQku8NgOesDAfBgNVHSMEGDAWgBR2FuJy
+        SV5BrdVsPiNPQku8NgOesDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA
+        A4IBAQCBVlsn5bLmtz/Q9cRpSrJ3RGgeUnlSbmwAInwdCARyYpzimUgVZF4Qa8BO
+        na0R6jSpD8tYVIJWAPKMGTVtCrxpavd5qx1UGwnYD4PuCLnVNqIti7rM8vH4lbkg
+        C0DigYRoE6p15y+78bpy/6R233doDHX6FhmEOfRdM29W5W3RUgZaLcIcP+OFuczp
+        webooE51RNuuV9QAPTgBNpVUa3Z0rDofBhJfNnexz1HMjrouGghD9PcZ7ZJLMgoh
+        3mklX31+G+jNESKxgQabBHRsrYsJRlOwPuNGMc6srKe44xH6Zs/zCLHLp4H9IUvN
+        +S2XXESeTeQ1kWpFPGzf7xG0wOyN
+        -----END CERTIFICATE-----
+      TLS_KEY: |
+        -----BEGIN PRIVATE KEY-----
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCpu2fXcPCtzIt6
+        umLt38vuGjO2C+w9l7FbRwHwBEq6e45L1w26IeEDauhlqOi56lDmZJIwGlE+nTZ2
+        zIG9fLT0ddSATpjvcCK8qtntR7WIhp2QLb9Plo6SX8o7JNTX2FQrNDINIBF9nJNq
+        WW+6w7eX28Nlxce60SoKjpox6V0J9gaaveb3mnCi45WHPnG9uRK8LTHzqMigBVtZ
+        2l3eIMNJnoSA4j0laZo/u6m1qgYcX0z3QUSBUMy0vF/hoRBUUL88BDETr2WoV7du
+        eHT+T6OM4FL0WVh0xY7JEAwlo751i4N37iCTVNMfEyJyQNz2tZEcOXyF9hBPC0tk
+        AQwfxOADAgMBAAECggEACpBKMWDrQc3fXRyOPVghOj5G5fd4/7OvYKBwkO5wyN7E
+        EkPzVph23NPBsgNgtKLONStLjpMyEkUOQjeOguto3GbG+n3/IQvSxaOWhkuLvfsE
+        LG3ZyyDHhSRRaFFDA/SyobERGmWwC6gmjpxmtUeAEi37IRw9nDVvZJJ6gKJnCCW9
+        voiFtWbvM4gFylaCsbMwRsIYJHVQhCeumnS41KPEJGEzm7ipFA7eEud3qQ0UL+M3
+        asytcCmZBx29cG/9ufnBSo08SeYmcHNrimpWWYDBKKvNamflFjNZks8no8GagQTV
+        DbdLScZxnv28OXPRmCxak5Wqbf8YV7cKQOL5szJAEQKBgQDu/S4lEXOWkRRsdm5u
+        J7QCT47W5LBDk6IrD7pvFG6Y8VGbpxClT8GwVFWFkG7cn14Euf6yIVXptsGfbjVD
+        2e8Jisw+5vCpcHnVeC8QHDIxqXYd//mJI8g1NVFNxrfSsmqblzjRV2KbcttzwfQZ
+        IHvByWRg/J+yXqirqek8UU91MQKBgQC10DyHZe2oYmIG06Q8GfR/Bs3aRp+WCcU1
+        UqaKoHGwqL23aKvlQpBLzWf3vUp7cs/js82TtqSgu3caUP/7grWbcCRdDUNFAQKc
+        K173yko3VcgzFF0p7gQsg4RYiGnhaLqI4gPQuxxGdR7d8qtIf1rEBQW/fqfX7k+b
+        1GsPvaQrcwKBgB+ssqb7DyTPibNuZuh2nqcHwFi+6pWqRX4LkZwTSy0+HqDQnaYr
+        UfJ62vLe17Kp9J4PwK//NxHIxRTKWIjro4DSQou7s/3hCGTAjwxFkGmAmkUTnhEN
+        CwXyURpL0iU8vGBuxHsKZ+lOacOH20BRS9W9SW6JTOkpHpXR6TWzWSKhAoGBAJxn
+        iMqJessR53Yr9urlARmNhuSxQHPX79iRQ0eaAnOQlbQDzWwpuOwcxcWvBzXvbLtb
+        YAwkYLcMzcbLy4pXxVb0P7P0xtvDpLUn8kiDsxirKNAYQpThdqG8ecuXfk40w9Mh
+        a1rSu944vtb7/TEerbxW/bzgfg8ZqU5Ki9c8ss/VAoGAJT/pACkiuxvt8Oteg3rP
+        2phRxg1dcTZcDMAJAwxiHJtoj7D1/fCOCIA4hA+cDku99pL2BSwr7PyqElsIqjf5
+        AwIz5ZnSr7BbhNwBmnT7hyIzSTXbm7J/o5XUcJdNluPagKus8gjuRxWcVd/rDvf3
+        PTZZispqY2EYo5AnF+cCtvI=
+        -----END PRIVATE KEY-----
 
-volumes:
-  orbitdb-data: 
+
+  node-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platform: linux/amd64
+    entrypoint: node dist/main
+    ports:
+      - 3001:3001
+    environment:
+      RUN_MODE: node
+      PORT: 3001
+      DEBUG: "*"
+      SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
+      BOOTSTRAP_NODES: /dns4/bootstrap/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN
+
+  
+  node-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platform: linux/amd64
+    entrypoint: node dist/main
+    ports:
+      - 3002:3002
+    environment:
+      RUN_MODE: node
+      PORT: 3002
+      DEBUG: "*"
+      SWARM_KEY: L2tle9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTSdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
+      BOOTSTRAP_NODES: /dns4/bootstrap/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN
+
+  
+  node-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platform: linux/amd64
+    entrypoint: node dist/main
+    ports:
+      - 3003:3003
+    environment:
+      RUN_MODE: node
+      PORT: 3003
+      DEBUG: "*"
+      SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
+      BOOTSTRAP_NODES: /dns4/bootstrap/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN

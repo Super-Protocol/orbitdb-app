@@ -66,17 +66,12 @@ export async function bootstrap() {
     process.exit(1);
   }
 
-  const tcpPort = process.env.TCP_PORT || 4001;
+  // const tcpPort = process.env.TCP_PORT || 4001;
   const wsPort = process.env.WS_PORT || 4002;
   const libp2p = await createLibp2p({
     privateKey: await loadOrCreatePrivateKey(),
     addresses: {
-      listen: [
-        `/ip4/0.0.0.0/tcp/${tcpPort}`,
-        `/ip4/0.0.0.0/tcp/${wsPort}/wss`,
-        '/p2p-circuit',
-        '/webrtc',
-      ],
+      listen: [`/ip4/0.0.0.0/tcp/${wsPort}/wss`, '/p2p-circuit', '/webrtc'],
     },
     transports: [
       tcp(),
@@ -84,6 +79,7 @@ export async function bootstrap() {
         https: {
           key: process.env.TLS_KEY,
           cert: process.env.TLS_CERT,
+          rejectUnauthorized: false,
         },
       }),
       circuitRelayTransport(),
@@ -103,17 +99,15 @@ export async function bootstrap() {
         interval: 1000,
       }),
     ],
-    connectionManager: {},
+    connectionManager: {
+      // inboundUpgradeTimeout: 10000,
+      // outboundUpgradeTimeout: 10000,
+      // outboundStreamProtocolNegotiationTimeout: 10000,
+      // inboundStreamProtocolNegotiationTimeout: 10000,
+    },
     services: {
       autoNAT: autoNAT(),
-      relay: circuitRelayServer({
-        maxInboundHopStreams: 1000,
-        maxOutboundHopStreams: 1000,
-        reservations: {
-          maxReservations: 100,
-          reservationClearInterval: 1000 * 60,
-        },
-      }),
+      relay: circuitRelayServer(),
       ping: ping(),
       identify: identify(),
       pubsub: gossipsub({

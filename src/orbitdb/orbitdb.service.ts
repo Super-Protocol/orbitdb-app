@@ -90,12 +90,22 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
           addresses: {
             listen: [
               `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsTcpPort}`,
-              `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsWsPort}/ws`,
+              `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsWsPort}/wss`,
               '/p2p-circuit',
               '/webrtc',
             ],
           },
-          transports: [circuitRelayTransport(), webSockets(), tcp(), webRTC()],
+          transports: [
+            circuitRelayTransport(),
+            webSockets({
+              websocket: {
+                rejectUnauthorized: false,
+                // handshakeTimeout: 60000,
+              },
+            }),
+            tcp(),
+            webRTC(),
+          ],
           streamMuxers: [yamux(), mplex()],
           peerDiscovery: [
             pubsubPeerDiscovery({
@@ -113,14 +123,18 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
             psk: this.configService.swarmKey,
           }),
           connectionManager: {
-            // reconnectRetries: Infinity,
+            // inboundUpgradeTimeout: 10000,
+            // outboundUpgradeTimeout: 10000,
+            // outboundStreamProtocolNegotiationTimeout: 10000,
+            // inboundStreamProtocolNegotiationTimeout: 10000,
           },
           services: {
             autoNAT: autoNAT(),
             dcutr: dcutr(),
-            relay: circuitRelayServer(),
+            relay: circuitRelayServer({}),
             pubsub: gossipsub({
               allowPublishToZeroTopicPeers: true,
+              // heartbeatInterval: 10000,
             }),
             identify: identify(),
             identifyPush: identifyPush(),

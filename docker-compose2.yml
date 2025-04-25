@@ -1,0 +1,14 @@
+# version: '3.8'
+
+services:
+  node-1:
+    image: ichirkin/orbitdb:amd64
+    entrypoint: node dist/main
+    ports:
+      - 3001:3001
+    environment:
+      RUN_MODE: node
+      PORT: 3001
+      DEBUG: "*"
+      SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjgyNTM5NmUxMjhiNDRiY2I5ZmExMmQxZDg1NTY4MmNjNzFlZGFmZDczMzIyN2UyNzg3ZWJkYmY5YzA3OTU4Mjc=
+      BOOTSTRAP_NODES: /dns4/files-app-1.superprotocol.io/tcp/443/tls/ws/p2p/12D3KooWEkYkWvfoq94WqTtDKSF3R614mKCvBzeW5dJfaGgFc1v6
