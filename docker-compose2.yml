@@ -2,7 +2,10 @@
 
 services:
   node-1:
-    image: ichirkin/orbitdb:amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
     entrypoint: node dist/main
     ports:
       - 3001:3001
