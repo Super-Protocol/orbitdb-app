@@ -1,9 +1,10 @@
+
 services:
   bootstrap:
     build:
       context: .
       dockerfile: Dockerfile
-      platform: linux/amd64
+    platform: linux/amd64
     entrypoint: node dist/main
     container_name: bootstrap
     ports:
@@ -73,7 +74,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      platform: linux/amd64
+    platform: linux/amd64
     entrypoint: node dist/main
     ports:
       - 3001:3001
@@ -89,7 +90,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      platform: linux/amd64
+    platform: linux/amd64
     entrypoint: node dist/main
     ports:
       - 3002:3002
@@ -105,7 +106,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      platform: linux/amd64
+    platform: linux/amd64
     entrypoint: node dist/main
     ports:
       - 3003:3003
