@@ -8,8 +8,7 @@ services:
     entrypoint: node dist/main
     container_name: bootstrap
     ports:
-      - 4500:4000
-      - 4001:4001
+      - 4000:4000
     environment:
       RUN_MODE: bootstrap
       ANNOUNCE_ADDRESS: /dns4/gp-ws-01.superprotocol.dev/tcp/4000/wss/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN

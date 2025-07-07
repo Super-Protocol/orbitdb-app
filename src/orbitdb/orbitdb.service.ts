@@ -95,9 +95,7 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
             ],
           },
           transports: [
-
             circuitRelayTransport({
-              reservationConcurrency: 10,
             }),
             webSockets({
               websocket: {
