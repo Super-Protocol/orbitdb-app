@@ -103,7 +103,6 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
               },
             }),
             tcp(),
-            webRTC(),
           ],
           streamMuxers: [yamux()],
           peerDiscovery: [
