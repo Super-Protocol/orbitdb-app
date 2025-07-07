@@ -13,16 +13,14 @@ import * as fs from 'fs/promises';
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string';
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string';
 import { keys } from '@libp2p/crypto';
-import { kadDHT } from '@libp2p/kad-dht';
-import { webRTC } from '@libp2p/webrtc';
-import { mplex } from '@libp2p/mplex';
+
 import {
   circuitRelayServer,
   circuitRelayTransport,
   // type CircuitRelayService,
 } from '@libp2p/circuit-relay-v2';
 import { identify, identifyPush } from '@libp2p/identify';
-import { dcutr } from '@libp2p/dcutr';
+
 
 const privateKeyFile = process.env.PRIVATE_KEY_FILE || './keys.json';
 
@@ -68,10 +66,14 @@ export async function bootstrap() {
 
   // const tcpPort = process.env.TCP_PORT || 4001;
   const wsPort = process.env.WS_PORT || 4002;
+  const announceAddress = process.env.ANNOUNCE_ADDRESS || '/dns4/gp-ws-01.superprotocol.dev/tcp/4000/wss/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN';
   const libp2p = await createLibp2p({
     privateKey: await loadOrCreatePrivateKey(),
     addresses: {
-      listen: [`/ip4/0.0.0.0/tcp/${wsPort}/wss`, '/p2p-circuit', '/webrtc'],
+      listen: [`/ip4/0.0.0.0/tcp/${wsPort}/wss`],
+      announce: [
+          announceAddress
+      ],
     },
     transports: [
       tcp(),
@@ -82,18 +84,10 @@ export async function bootstrap() {
           rejectUnauthorized: false,
         },
       }),
-      circuitRelayTransport(),
-      webRTC({
-        rtcConfiguration: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:global.stun.twilio.com:3478?transport=udp' },
-          ],
-        },
-      }),
+
     ],
     connectionEncrypters: [noise(), tls()],
-    streamMuxers: [yamux(), mplex()],
+    streamMuxers: [yamux()],
     peerDiscovery: [
       pubsubPeerDiscovery({
         interval: 1000,
@@ -107,7 +101,11 @@ export async function bootstrap() {
     },
     services: {
       autoNAT: autoNAT(),
-      relay: circuitRelayServer(),
+      relay: circuitRelayServer({
+        reservations: {
+          applyDefaultLimit: false
+        }
+      }),
       ping: ping(),
       identify: identify(),
       pubsub: gossipsub({
@@ -116,10 +114,8 @@ export async function bootstrap() {
         allowPublishToZeroTopicPeers: true,
       }),
       identifyPush: identifyPush(),
-      dcutr: dcutr(),
-      dht: kadDHT({
-        clientMode: false,
-      }),
+
+
     },
     connectionProtector: preSharedKey({
       psk: Buffer.from(process.env.SWARM_KEY, 'base64'),

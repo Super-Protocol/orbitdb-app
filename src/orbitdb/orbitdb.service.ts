@@ -25,19 +25,19 @@ import {
   circuitRelayTransport,
   circuitRelayServer,
 } from '@libp2p/circuit-relay-v2';
-import { dcutr } from '@libp2p/dcutr';
 import { autoNAT } from '@libp2p/autonat';
 import { ping } from '@libp2p/ping';
-import { bootstrap } from '@libp2p/bootstrap';
 import { uPnPNAT } from '@libp2p/upnp-nat';
 import { LevelBlockstore } from 'blockstore-level';
 import { preSharedKey } from '@libp2p/pnet';
 import { DialOptions, PeerInfo } from '@libp2p/interface';
 import { setTimeout } from 'node:timers/promises';
 import { webSockets } from '@libp2p/websockets';
-import { kadDHT } from '@libp2p/kad-dht';
 import { webRTC } from '@libp2p/webrtc';
 import { AppConfigService } from '../config/config.service.js';
+
+import { multiaddr} from '@multiformats/multiaddr';
+import { peerIdFromString } from '@libp2p/peer-id';
 
 @Injectable()
 export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
@@ -92,56 +92,37 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
               `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsTcpPort}`,
               `/ip4/${this.configService.ipfsHost}/tcp/${this.configService.ipfsWsPort}/wss`,
               '/p2p-circuit',
-              '/webrtc',
             ],
           },
           transports: [
-            circuitRelayTransport(),
+            circuitRelayTransport({
+            }),
             webSockets({
               websocket: {
                 rejectUnauthorized: false,
-                // handshakeTimeout: 60000,
               },
             }),
             tcp(),
-            webRTC(),
           ],
-          streamMuxers: [yamux(), mplex()],
+          streamMuxers: [yamux()],
           peerDiscovery: [
             pubsubPeerDiscovery({
               interval: 5e3,
             }),
-            ...(this.configService.bootstrapNodes
-              ? [
-                  bootstrap({
-                    list: this.configService.bootstrapNodes,
-                  }),
-                ]
-              : []),
           ],
           connectionProtector: preSharedKey({
             psk: this.configService.swarmKey,
           }),
           connectionManager: {
-            // inboundUpgradeTimeout: 10000,
-            // outboundUpgradeTimeout: 10000,
-            // outboundStreamProtocolNegotiationTimeout: 10000,
-            // inboundStreamProtocolNegotiationTimeout: 10000,
           },
           services: {
             autoNAT: autoNAT(),
-            dcutr: dcutr(),
-            relay: circuitRelayServer({}),
             pubsub: gossipsub({
               allowPublishToZeroTopicPeers: true,
-              // heartbeatInterval: 10000,
             }),
             identify: identify(),
             identifyPush: identifyPush(),
             ping: ping(),
-            dht: kadDHT({
-              clientMode: false,
-            }),
             upnp: uPnPNAT(),
           },
         },
@@ -150,8 +131,21 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
       this.pubsub = this.helia.libp2p.services.pubsub as GossipSub;
 
       this.helia.libp2p.addEventListener('peer:discovery', (evt) => {
-        this.logger.log('Found peer: ', evt.detail.id.toString());
-        void this.connectTo(evt.detail);
+        const peerIdStr = evt.detail.id.toString();
+        const isBootstrap = (this.configService.bootstrapNodes || []).some(addrStr => {
+          try {
+            const ma = multiaddr(addrStr);
+            return ma.getPeerId() === peerIdStr;
+          } catch {
+            return false;
+          }
+        });
+        if (!isBootstrap && !this.helia.libp2p.getPeers().map(p => p.toString()).includes(peerIdStr)) {
+          this.logger.log('Found peer: ', peerIdStr);
+          void this.connectTo(evt.detail);
+        } else {
+          this.logger.log('Peer already connected or is bootstrap, skipping connect:', peerIdStr);
+        }
       });
 
       const addresses = this.helia.libp2p.getMultiaddrs();
@@ -167,21 +161,66 @@ export class OrbitDBService implements OnModuleInit, OnModuleDestroy {
           connectedPeer: peerId.detail.toString(),
         });
       });
-      this.orbitdb.ipfs.libp2p.addEventListener('peer:disconnect', (peerId) => {
-        this.logger.log(`peer:disconnect`, peerId.detail);
+      
+      this.orbitdb.ipfs.libp2p.addEventListener('peer:disconnect', async (evt) => {
+        const peerId = evt.detail.toString();
+        this.logger.log(`peer:disconnect`, peerId);
+
+        try {
+          await this.helia.libp2p.peerStore.delete(peerIdFromString(peerId));
+          this.logger.log(`Peer ${peerId} removed from peerStore after disconnect.`);
+        } catch (err) {
+          this.logger.warn(`Failed to remove peer ${peerId} from peerStore: ${err?.message}`);
+        }
+
       });
 
       this.logger.log('OrbitDB successfully connected', {
         addresses,
       });
 
-      setInterval(() => {
-        const peers = this.helia.libp2p.getPeers();
+      setInterval(async () => {
+        const allPeers = await this.helia.libp2p.peerStore.all();
+        const peerInfos = allPeers.map(peer => {
+          const peerId = peer.id.toString();
+          const addrs = (peer.addresses || []).map(a => a.multiaddr.toString());
+          return { peerId, multiaddrs: addrs };
+        });
 
-        console.log(
-          `PeerID: ${this.orbitdb.ipfs.libp2p.peerId.toString()}, peers: ${JSON.stringify(peers)}`,
-        );
-      }, 2000);
+        console.log('Peers and their multiaddrs (from peerStore):');
+        peerInfos.forEach(info => {
+          console.log(`Peer: ${info.peerId}`);
+          if (info.multiaddrs.length > 0) {
+            info.multiaddrs.forEach(addr => console.log(`  ${addr}`));
+          } else {
+            console.log('  (no known multiaddrs)');
+          }
+        });
+      }, 5000);
+
+      // bootstrap nodes monitoring
+      const monitorBootstrapNodes = () => {
+        (this.configService.bootstrapNodes || []).forEach(async addrStr => {
+          try {
+            const ma = multiaddr(addrStr);
+            const peerId = ma.getPeerId();
+            if (!peerId) return;
+            const peerIdStr = peerIdFromString(peerId.toString());
+
+            if (this.helia.libp2p.getPeers().map(p => p.toString()).includes(peerIdStr.toString())) {
+              return;
+            }
+            this.logger.log(`Connecting to bootstrap node ${peerIdStr}`);
+            void this.connectTo({ id: peerIdStr, multiaddrs: [ma] } as PeerInfo);
+          } catch {}
+        });
+      };
+      // Run first iteration immediately
+      monitorBootstrapNodes();
+      // Then repeat every 5 seconds
+      setInterval(monitorBootstrapNodes, 5000);
+
+
     } catch (err) {
       const error = err as Error;
       this.logger.error(

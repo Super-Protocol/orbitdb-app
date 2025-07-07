@@ -8,10 +8,10 @@ services:
     entrypoint: node dist/main
     container_name: bootstrap
     ports:
-      - 4500:4000
-      - 4001:4001
+      - 4000:4000
     environment:
       RUN_MODE: bootstrap
+      ANNOUNCE_ADDRESS: /dns4/gp-ws-01.superprotocol.dev/tcp/4000/wss/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN
       WS_PORT: 4000
       DEBUG: "*"
       SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
@@ -68,7 +68,24 @@ services:
         AwIz5ZnSr7BbhNwBmnT7hyIzSTXbm7J/o5XUcJdNluPagKus8gjuRxWcVd/rDvf3
         PTZZispqY2EYo5AnF+cCtvI=
         -----END PRIVATE KEY-----
-
+  bootstrap-tunnel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    container_name: bootstrap-tunnel
+    ports:
+      - 9000:9000
+    volumes:
+      - ./orbit-db-boostrap-test-client:/sp/inputs/input-0001
+      - ./certs:/sp/certs
+    entrypoint: node dist/main
+    environment:
+      ANNOUNCE_ADDRESS: /dns4/orbit-db-boostrap-test.superprotocol.io/tcp/443/wss/p2p/12D3KooWDQXKheo6pNm2nycL878yxF9hiGCatrtmhBNzNVPnqYAh
+      RUN_MODE: bootstrap
+      DEBUG: "*"
+      SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
+      PRIVATE_KEY: dvNDIgsQI6euAow1zNRpDb8SY0ES6HbQZNlyQpMlo6s1UyjEATatV0jRBKwxWhlKWZz3YQNLo5UXwrmiWeSXHg==
 
   node-1:
     build:
@@ -83,7 +100,7 @@ services:
       PORT: 3001
       DEBUG: "*"
       SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
-      BOOTSTRAP_NODES: /dns4/bootstrap/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN
+      BOOTSTRAP_NODES: /dns4/gp-ws-01.superprotocol.dev/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN,/dns4/orbit-db-boostrap-test.superprotocol.io/tcp/443/wss/p2p/12D3KooWDQXKheo6pNm2nycL878yxF9hiGCatrtmhBNzNVPnqYAh
 
   
   node-2:
@@ -99,8 +116,7 @@ services:
       PORT: 3002
       DEBUG: "*"
       SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
-      BOOTSTRAP_NODES: /dns4/bootstrap/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN
-
+      BOOTSTRAP_NODES: /dns4/gp-ws-01.superprotocol.dev/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN,/dns4/orbit-db-boostrap-test.superprotocol.io/tcp/443/wss/p2p/12D3KooWDQXKheo6pNm2nycL878yxF9hiGCatrtmhBNzNVPnqYAh
   
   node-3:
     build:
@@ -115,4 +131,4 @@ services:
       PORT: 3003
       DEBUG: "*"
       SWARM_KEY: L2tleS9zd2FybS9wc2svMS4wLjAvCi9iYXNlMTYvCjdkYmQ3YjM2OTFjMmNiOGU3MDUwODUwYjRmMzMwZmRhNjFjMTdhM2I3ODI5NTY4ZGQxZjU1MGY5NzgwMGUyMjA=
-      BOOTSTRAP_NODES: /dns4/bootstrap/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN
+      BOOTSTRAP_NODES: /dns4/gp-ws-01.superprotocol.dev/tcp/4000/tls/ws/p2p/12D3KooWRJ4R193SNe7ZVv52Dhh4tHr9LfEFrv6QQK222J9jtPFN,/dns4/orbit-db-boostrap-test.superprotocol.io/tcp/443/wss/p2p/12D3KooWDQXKheo6pNm2nycL878yxF9hiGCatrtmhBNzNVPnqYAh
